@@ -35,9 +35,9 @@ const bannerComment = `
 
 export class IconGenerator {
 	constructor(
-		private rawDir = 'svg',
-		private outDir = 'output/icons',
-		private burrelExportDir = 'output'
+		private rawDir = 'src/lib/icon-pack/svg',
+		private outDir = 'src/lib/icon-pack/icons',
+		private burrelExportDir = 'src/lib/icon-pack'
 	) {}
 
 	public run() {
