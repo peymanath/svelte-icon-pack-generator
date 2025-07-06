@@ -35,9 +35,9 @@ const bannerComment = `
 
 export class IconGenerator {
 	constructor(
-		private rawDir = 'src/lib/icon-pack/svg',
-		private outDir = 'src/lib/icon-pack/icons',
-		private burrelExportDir = 'src/lib/icon-pack'
+		private rawDir = 'svg',
+		private outDir = 'output/icons',
+		private burrelExportDir = 'output'
 	) {}
 
 	public run() {
@@ -72,8 +72,22 @@ export class IconGenerator {
 
 			const { data: optimizedSvg } = optimize(rawSvg, {
 				multipass: true,
-				plugins: ['preset-default']
-			});
+				plugins: [
+					{
+					name: 'convertColors',
+					params: {
+						currentColor: true
+					}
+					},
+					{
+					name: 'removeAttrs',
+					params: {
+						attrs: '(style)',
+						preserveCurrentColor: true
+					}
+					}
+				]
+				});
 
 			const innerSvg = optimizedSvg.replace(/<svg[^>]*>|<\/svg>/g, '').trim();
 
@@ -81,14 +95,12 @@ export class IconGenerator {
 <script lang="ts">
   ${bannerComment}
   export let size: string = "24";
-  export let color: string = "currentColor";
 </script>
 
 <svg
   xmlns="http://www.w3.org/2000/svg"
   width={size}
   height={size}
-  fill={color}
   viewBox="0 0 24 24"
 >
   ${innerSvg}
