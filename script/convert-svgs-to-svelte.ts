@@ -65,7 +65,7 @@ export class IconGenerator {
 		const exportLines: string[] = [];
 
 		for (const file of files) {
-			const componentName = this.toPascalCase(path.basename(file, '.svg'));
+			const componentName = `Icon${this.toPascalCase(path.basename(file, '.svg').replaceAll('iconsax-', ''))}`;
 			const svgPath = path.resolve(this.rawDir, file);
 			const outputPath = path.resolve(this.outDir, `${componentName}.svelte`);
 			const rawSvg = fs.readFileSync(svgPath, 'utf-8');
@@ -73,39 +73,44 @@ export class IconGenerator {
 			const { data: optimizedSvg } = optimize(rawSvg, {
 				multipass: true,
 				plugins: [
+					'removeScriptElement',
+					'removeMetadata',
+					'removeUselessDefs',
+					'removeDesc',
+					'removeTitle',
+					'removeEmptyText',
+					'collapseGroups',
+					'removeEmptyContainers',
 					{
-					name: 'convertColors',
-					params: {
-						currentColor: true
-					}
+						name: 'removeAttrs',
+						params: {
+							attrs: ['class', 'style', 'id', 'data-name', 'clip-path', 'mask', '^data-.*', '^aria-.*'],
+							preserveCurrentColor: true
+						}
 					},
 					{
-					name: 'removeAttrs',
-					params: {
-						attrs: '(style)',
-						preserveCurrentColor: true
-					}
+						name: 'convertColors',
+						params: {
+							currentColor: true
+						}
+					},
+					{
+						name: 'removeDimensions'
 					}
 				]
-				});
+			});
 
-			const innerSvg = optimizedSvg.replace(/<svg[^>]*>|<\/svg>/g, '').trim();
+			const injectedSvg = optimizedSvg.replace(/\s(width|height|class)="[^"]*"/g, '').replace(/<svg\b([^>]*)>/, '<svg$1 width={size} height={size} class={extraClass}>');
 
 			const componentCode = `
-<script lang="ts">
-  ${bannerComment}
-  export let size: string = "24";
-</script>
+					<script lang="ts">
+					${bannerComment}
+					export let size: string = "24";
+					export let extraClass: string = "";
+					</script>
 
-<svg
-  xmlns="http://www.w3.org/2000/svg"
-  width={size}
-  height={size}
-  viewBox="0 0 24 24"
->
-  ${innerSvg}
-</svg>
-`;
+					${injectedSvg}
+					`;
 
 			fs.writeFileSync(outputPath, componentCode.trim(), 'utf-8');
 			exportLines.push(`export { default as ${componentName} } from './${componentName}.svelte';`);
